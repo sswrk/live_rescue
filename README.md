@@ -1,0 +1,110 @@
+# LiveRescue
+
+**UX Protection from Developer Oopsies in Phoenix LiveView**
+
+`LiveRescue` protects your users from seeing crashes caused by unexpected bugs in your code. It wraps LiveView and LiveComponent lifecycle callbacks in `try/rescue` blocks, so when something goes wrong, users see a graceful fallback instead of the "Red Screen of Death" or a jarring page reload.
+
+**This is not an error handling library.** LiveRescue is a safety net for the bugs that slip through testing. Every error it catches should be treated as a bug to fix, not an expected condition to handle. The library logs all rescued exceptions with full stacktraces so you can find and fix them.
+
+> **⚠️ Architectural Warning:** This library overrides the standard "Let it Crash" philosophy of the BEAM. Please read the "Risks & Trade-offs" section below before using this in production.
+
+## Installation
+
+Add `live_rescue` to your list of dependencies in `mix.exs`:
+
+```elixir
+def deps do
+  [
+    {:live_rescue, git: "https://github.com/sswrk/live_rescue"}
+  ]
+end
+```
+
+## Usage
+
+Add `use LiveRescue` to your LiveView or LiveComponent module:
+
+```elixir
+defmodule MyAppWeb.ThermostatLive do
+  use MyAppWeb, :live_view
+  use LiveRescue  # <--- Add this line
+
+  # ...
+end
+```
+
+### Global Setup
+
+To protect all LiveViews and LiveComponents in your app, add `use LiveRescue` to your Web module:
+
+```elixir
+# lib/my_app_web.ex
+def live_view do
+  quote do
+    use Phoenix.LiveView
+    use LiveRescue  # <--- Add this line
+
+    unquote(html_helpers())
+  end
+end
+
+def live_component do
+  quote do
+    use Phoenix.LiveComponent
+    use LiveRescue  # <--- Add this line
+
+    unquote(html_helpers())
+  end
+end
+```
+
+### Wrapped Callbacks
+
+LiveRescue wraps the following callbacks and handles crashes differently depending on the callback type:
+
+| Callback | Applies to | On crash |
+|----------|------------|----------|
+| `mount/3` | LiveView | Renders error UI instead of the component |
+| `mount/1` | LiveComponent | Renders error UI instead of the component |
+| `update/2` | LiveComponent | Shows flash message, keeps previous state |
+| `render/1` | Both | Renders error UI |
+| `handle_event/3` | Both | Shows flash message |
+| `handle_info/2` | LiveView | Shows flash message |
+| `handle_params/3` | LiveView | Shows flash message |
+
+All crashes are logged with full stacktraces.
+
+## Configuration
+
+Currently, the library is not configurable.
+
+TODO: granular configuration, the possibility to override/hook into error handlers.
+
+## Risks & Trade-offs
+
+LiveView follows the OTP "Let it Crash" philosophy: when something goes wrong, the process crashes and restarts with a clean state.
+
+LiveRescue keeps the process alive instead. The socket state remains unchanged (state only updates when a callback returns successfully), but this can cause problems when a callback is supposed to reset or clean up state.
+
+### The Stuck State Problem
+
+Consider this flow:
+
+```elixir
+# User clicks "Submit" -> set loading state
+def handle_event("submit", params, socket) do
+  {:noreply, assign(socket, loading: true)}
+end
+
+# Async operation completes -> clear loading state
+def handle_info({:submit_result, result}, socket) do
+  do_something_that_crashes!(result)  # 💥 crashes here
+  {:noreply, assign(socket, loading: false, result: result)}
+end
+```
+
+Without LiveRescue: the process crashes, LiveView reconnects, `mount/3` runs again, and the user sees a fresh state.
+
+With LiveRescue: the exception is caught, a flash message appears, but `loading` never gets set to `false`. The user sees a spinner that never goes away.
+
+TODO: Provide a way to opt out of this or to clean up such state.
