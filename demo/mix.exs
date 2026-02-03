@@ -55,8 +55,7 @@ defmodule Demo.MixProject do
        compile: false,
        depth: 1},
       {:jason, "~> 1.2"},
-      {:bandit, "~> 1.5"},
-      {:lazy_html, ">= 0.1.0", only: :test}
+      {:bandit, "~> 1.5"}
     ]
   end
 
