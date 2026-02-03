@@ -12,16 +12,12 @@ defmodule DemoWeb.CrashLabLive do
     CrashOnRenderComponent
   }
 
-  @guarded false
-  @base_path ""
-
   @impl true
   def mount(_params, _session, socket) do
+    # Note: :guarded and :base_path are assigned by on_mount hook in router
     {:ok,
      socket
      |> assign(:page_title, "Crash Lab - Standard")
-     |> assign(:guarded, @guarded)
-     |> assign(:base_path, @base_path)
      |> assign(:show_mount_crasher, false)
      |> assign(:show_render_crasher, false)
      |> assign(:update_trigger, 0)}

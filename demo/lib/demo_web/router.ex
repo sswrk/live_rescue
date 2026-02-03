@@ -18,7 +18,7 @@ defmodule DemoWeb.Router do
     pipe_through :browser
 
     # Standard (unprotected) routes - use app layout
-    live_session :default, layout: {DemoWeb.Layouts, :app} do
+    live_session :default, on_mount: {DemoWeb.Hooks, :default}, layout: {DemoWeb.Layouts, :app} do
       live "/", CrashLabLive
       live "/crash/mount", CrashLab.CrashOnMountLive
       live "/crash/params", CrashLab.CrashOnParamsLive
@@ -27,7 +27,7 @@ defmodule DemoWeb.Router do
     end
 
     # LiveRescue protected routes - use app layout
-    live_session :guarded, layout: {DemoWeb.Layouts, :app} do
+    live_session :guarded, on_mount: {DemoWeb.Hooks, :guarded}, layout: {DemoWeb.Layouts, :app} do
       live "/guarded", CrashLabGuardedLive
       live "/guarded/crash/mount", CrashLab.Guarded.CrashOnMountLive
       live "/guarded/crash/params", CrashLab.Guarded.CrashOnParamsLive
