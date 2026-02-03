@@ -99,8 +99,8 @@ defmodule LiveRescue do
   @doc false
   def render_error(assigns) do
     ~H"""
-    <div class="p-4 bg-error/10 border border-error/30 rounded-lg text-error">
-      <p class="font-medium">Unexpected error</p>
+    <div style="padding: 1rem; background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 0.5rem; color: #dc2626;">
+      <p style="font-weight: 500; margin: 0;">Unexpected error</p>
     </div>
     """
   end
