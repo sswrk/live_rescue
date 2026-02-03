@@ -35,6 +35,8 @@ defmodule MyAppWeb.ThermostatLive do
 end
 ```
 
+This also works with nested LiveViews (via `live_render/3`) - each nested LiveView needs its own `use LiveRescue` since they run in separate processes.
+
 ### Global Setup
 
 To protect all LiveViews and LiveComponents in your app, add `use LiveRescue` to your Web module:

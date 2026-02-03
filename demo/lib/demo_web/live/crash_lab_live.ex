@@ -208,6 +208,32 @@ defmodule DemoWeb.CrashLabLive do
           </div>
         </div>
       </div>
+
+      <%!-- Nested LiveView Section --%>
+      <div class="card bg-base-100 shadow-sm border border-base-200">
+        <div class="card-body">
+          <h2 class="card-title text-lg flex items-center gap-2">
+            <.icon name="hero-squares-2x2" class="size-5 text-info" /> Nested LiveViews
+          </h2>
+          <p class="text-sm text-base-content/60 mb-4">
+            Nested LiveViews (via live_render/3) run in their own process.
+            Without LiveRescue, crashes show Phoenix error screens.
+          </p>
+
+          <div class="card bg-base-200/50 border border-base-300">
+            <div class="card-body p-4">
+              <h3 class="font-semibold">Test Nested LiveViews</h3>
+              <p class="text-sm text-base-content/60">
+                Visit the dedicated nested LiveView test page to see how standard Phoenix
+                handles crashes in nested LiveViews (separate processes).
+              </p>
+              <a href="/crash/nested" class="btn btn-info btn-sm mt-2">
+                <.icon name="hero-arrow-right" class="size-4" /> Test Nested LiveViews
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     """
   end

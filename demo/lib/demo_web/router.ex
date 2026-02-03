@@ -24,6 +24,7 @@ defmodule DemoWeb.Router do
       live "/crash/params", CrashLab.CrashOnParamsLive
       live "/crash/delayed", CrashLab.CrashOnInfoLive
       live "/crash/render", CrashLab.CrashOnRenderLive
+      live "/crash/nested", CrashLab.NestedLiveViewParentLive
     end
 
     # LiveRescue protected routes - use app layout
@@ -33,6 +34,7 @@ defmodule DemoWeb.Router do
       live "/guarded/crash/params", CrashLab.Guarded.CrashOnParamsLive
       live "/guarded/crash/delayed", CrashLab.Guarded.CrashOnInfoLive
       live "/guarded/crash/render", CrashLab.Guarded.CrashOnRenderLive
+      live "/guarded/crash/nested", CrashLab.Guarded.NestedLiveViewParentLive
     end
   end
 
