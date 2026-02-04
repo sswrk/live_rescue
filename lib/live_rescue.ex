@@ -6,6 +6,20 @@ defmodule LiveRescue do
   `handle_params`, `update`, and `render` callbacks with try/rescue at compile time
   using `defoverridable`.
 
+  ## Flash Messages
+
+  When a callback crashes, LiveRescue sends a `{LiveRescue, message}` message
+  to the current process via `send/2`. This unified approach works for both LiveViews
+  and LiveComponents (where `self()` is the parent LiveView process).
+
+  If your LiveView uses LiveRescue, it will automatically handle this message and
+  display the flash. If a parent LiveView doesn't use LiveRescue but has child
+  components that do, you can add a `handle_info` clause manually:
+
+      def handle_info({LiveRescue, message}, socket) do
+        {:noreply, put_flash(socket, :error, message)}
+      end
+
   ## Internal State
 
   LiveRescue stores its internal state in the `__live_rescue__` assign key. This is
@@ -38,9 +52,25 @@ defmodule LiveRescue do
   defmacro __before_compile__(env) do
     definitions = Module.definitions_in(env.module, :def)
 
-    for {name, arity, socket_pos} <- @callback_specs,
-        {name, arity} in definitions do
-      generate_callback_wrapper(name, arity, socket_pos)
+    error_handler = generate_error_message_handler()
+
+    callback_wrappers =
+      for {name, arity, socket_pos} <- @callback_specs,
+          {name, arity} in definitions do
+        generate_callback_wrapper(name, arity, socket_pos)
+      end
+
+    [error_handler | callback_wrappers]
+  end
+
+  # Always generate a handle_info clause to receive LiveRescue error messages
+  defp generate_error_message_handler do
+    socket_var = Macro.var(:socket, __MODULE__)
+
+    quote do
+      def handle_info({unquote(__MODULE__), error_message}, unquote(socket_var)) do
+        {:noreply, Phoenix.LiveView.put_flash(unquote(socket_var), :error, error_message)}
+      end
     end
   end
 
@@ -113,7 +143,8 @@ defmodule LiveRescue do
 
   def handle_crash(:update, e, stacktrace, socket) do
     log_error("update", e, stacktrace)
-    {:ok, Phoenix.LiveView.put_flash(socket, :error, "Unexpected error")}
+    notify_error()
+    {:ok, socket}
   end
 
   def handle_crash(:render, e, stacktrace, assigns) do
@@ -124,7 +155,17 @@ defmodule LiveRescue do
   def handle_crash(callback, e, stacktrace, socket)
       when callback in [:handle_event, :handle_info, :handle_params] do
     log_error(Atom.to_string(callback), e, stacktrace)
-    {:noreply, Phoenix.LiveView.put_flash(socket, :error, "Unexpected error")}
+    notify_error()
+    {:noreply, socket}
+  end
+
+  # Sends an error message to the current process to display a flash.
+  # Works for both LiveViews (self() is the LiveView) and LiveComponents
+  # (self() is the parent LiveView process).
+  defp notify_error do
+    message = "Unexpected error"
+
+    send(self(), {__MODULE__, message})
   end
 
   @doc false
