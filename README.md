@@ -19,7 +19,7 @@ Add `live_rescue` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:live_rescue, git: "https://github.com/sswrk/live_rescue"}
+    {:live_rescue, git: "https://github.com/sswrk/live-rescue"}
   ]
 end
 ```
