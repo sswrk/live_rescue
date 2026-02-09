@@ -87,7 +87,7 @@ defmodule LiveRescue.ComponentGuard do
     end
   end
 
-  @guarded_callbacks [{:mount, 1}, {:update, 2}, {:handle_event, 3}, {:render, 1}]
+  @guarded_callbacks [{:mount, 1}, {:update, 2}, {:handle_event, 3}]
 
   defp get_or_create_guarded(module) do
     key = {__MODULE__, :guarded, module}
@@ -135,11 +135,6 @@ defmodule LiveRescue.ComponentGuard do
           @impl true
           def handle_event(event, params, socket),
             do: unquote(inner).handle_event(event, params, socket)
-        end
-
-        if :render in unquote(callbacks) do
-          @impl true
-          def render(assigns), do: unquote(inner).render(assigns)
         end
       end
 
