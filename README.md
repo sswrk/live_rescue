@@ -121,13 +121,11 @@ Eagerly evaluating the rendered struct to work around this breaks LiveView's cha
 As a **last resort**, you can wrap specific parts of a template in a render error boundary. This should only be used when you cannot fix the underlying component and need a safety net to prevent it from crashing the entire LiveView process:
 
 ```elixir
-import LiveRescue.ComponentGuard, only: [eager_error_boundary: 1]
-
 def render(assigns) do
   ~H"""
-  <.eager_error_boundary>
+  <LiveRescue.eager_error_boundary>
     <.some_risky_component />
-  </.eager_error_boundary>
+  </LiveRescue.eager_error_boundary>
 
   <.safe_component />  <%!-- This is not guarded --%>
   """

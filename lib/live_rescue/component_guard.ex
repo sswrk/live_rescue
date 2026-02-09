@@ -28,17 +28,9 @@ defmodule LiveRescue.ComponentGuard do
   wrapped content, as it forces eager evaluation of all lazy closures. Every
   render sends a full update to the client instead of a minimal diff.
 
-      <LiveRescue.ComponentGuard.eager_error_boundary>
+      <LiveRescue.eager_error_boundary>
         <.some_component />
-      </LiveRescue.ComponentGuard.eager_error_boundary>
-
-  Or import and use with a shorter name:
-
-      import LiveRescue.ComponentGuard, only: [eager_error_boundary: 1]
-
-      <.eager_error_boundary>
-        <.some_component />
-      </.eager_error_boundary>
+      </LiveRescue.eager_error_boundary>
   """
   def eager_error_boundary(assigns) do
     try do

@@ -9,7 +9,7 @@ defmodule DemoWeb.CrashLab.Guarded.RenderGuardLive do
   use LiveRescue
 
   import DemoWeb.CrashLab.CrashingFunctional
-  import LiveRescue.ComponentGuard, only: [eager_error_boundary: 1]
+  import LiveRescue, only: [eager_error_boundary: 1]
 
   @impl true
   def mount(_params, _session, socket) do

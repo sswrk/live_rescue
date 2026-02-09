@@ -20,16 +20,13 @@ defmodule LiveRescue do
 
   ## Catching render errors (last resort)
 
-  As a **last resort**, you can wrap content in an `eager_error_boundary` from
-  `LiveRescue.ComponentGuard`. This should only be used when you cannot fix the
-  underlying component and need a safety net to prevent it from crashing the
-  entire LiveView process.
+  As a **last resort**, you can wrap content in `eager_error_boundary/1`.
+  This should only be used when you cannot fix the underlying component and
+  need a safety net to prevent it from crashing the entire LiveView process.
 
-      import LiveRescue.ComponentGuard, only: [eager_error_boundary: 1]
-
-      <.eager_error_boundary>
+      <LiveRescue.eager_error_boundary>
         <.some_risky_component />
-      </.eager_error_boundary>
+      </LiveRescue.eager_error_boundary>
 
   **Trade-off:** This completely disables LiveView's change tracking (diffing)
   for the wrapped content, forcing eager evaluation of all lazy closures. Every
@@ -211,5 +208,6 @@ defmodule LiveRescue do
     """)
   end
 
+  defdelegate eager_error_boundary(assigns), to: LiveRescue.ComponentGuard
   defdelegate live_component_guarded(assigns), to: LiveRescue.ComponentGuard
 end
