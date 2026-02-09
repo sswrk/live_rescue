@@ -34,6 +34,7 @@ defmodule DemoWeb.Router do
       live "/guarded/crash/params", CrashLab.Guarded.CrashOnParamsLive
       live "/guarded/crash/delayed", CrashLab.Guarded.CrashOnInfoLive
       live "/guarded/crash/nested", CrashLab.Guarded.NestedLiveViewParentLive
+      live "/guarded/crash/render", CrashLab.Guarded.RenderGuardLive
     end
   end
 

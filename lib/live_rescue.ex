@@ -9,17 +9,32 @@ defmodule LiveRescue do
   When a `mount` callback crashes, LiveRescue renders a fallback error component instead
   of the normal view. For other callback crashes, a flash message is displayed.
 
-  ## Why `render` errors are not caught
+  ## Why `render` errors are not caught by default
 
-  LiveRescue does **not** wrap the `render` callback with try/rescue. Phoenix LiveView's
-  HEEx templates compile to `%Phoenix.LiveView.Rendered{}` structs containing lazy closures
-  for dynamic content. These closures — including calls to functional components — are
-  evaluated during LiveView's diff traversal, **after** the `render` function has already
-  returned. A `try/rescue` around `render` cannot catch errors that occur in these deferred
-  closures.
+  LiveRescue does **not** wrap the `render` callback with try/rescue by default. Phoenix
+  LiveView's HEEx templates compile to `%Phoenix.LiveView.Rendered{}` structs containing
+  lazy closures for dynamic content. These closures — including calls to functional
+  components — are evaluated during LiveView's diff traversal, **after** the `render`
+  function has already returned. A `try/rescue` around `render` cannot catch errors that
+  occur in these deferred closures.
 
-  Eagerly evaluating the rendered struct to work around this breaks LiveView's change
-  tracking (diffing), which is not an acceptable tradeoff for a general-purpose library.
+  ## Catching render errors (last resort)
+
+  As a **last resort**, you can wrap content in an `eager_error_boundary` from
+  `LiveRescue.ComponentGuard`. This should only be used when you cannot fix the
+  underlying component and need a safety net to prevent it from crashing the
+  entire LiveView process.
+
+      import LiveRescue.ComponentGuard, only: [eager_error_boundary: 1]
+
+      <.eager_error_boundary>
+        <.some_risky_component />
+      </.eager_error_boundary>
+
+  **Trade-off:** This completely disables LiveView's change tracking (diffing)
+  for the wrapped content, forcing eager evaluation of all lazy closures. Every
+  render sends a full update to the client instead of a minimal diff. Prefer
+  fixing the root cause of render errors over using this wrapper.
 
   ## Flash Messages
 

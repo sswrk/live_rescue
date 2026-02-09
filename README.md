@@ -110,11 +110,31 @@ LiveRescue wraps the following callbacks and handles crashes differently dependi
 
 All crashes are logged with full stacktraces.
 
-### Why `render/1` is not guarded
+### Why `render/1` is not guarded by default
 
-LiveRescue does **not** wrap the `render` callback with `try/rescue`. Phoenix LiveView's HEEx templates compile to `%Phoenix.LiveView.Rendered{}` structs containing lazy closures for dynamic content. These closures — including calls to functional components — are evaluated during LiveView's diff traversal, **after** the `render` function has already returned. A `try/rescue` around `render` cannot catch errors that occur in these deferred closures.
+LiveRescue does **not** wrap the `render` callback with `try/rescue` by default. Phoenix LiveView's HEEx templates compile to `%Phoenix.LiveView.Rendered{}` structs containing lazy closures for dynamic content. These closures — including calls to functional components — are evaluated during LiveView's diff traversal, **after** the `render` function has already returned. A `try/rescue` around `render` cannot catch errors that occur in these deferred closures.
 
-Eagerly evaluating the rendered struct to work around this would break LiveView's change tracking (diffing), which is not an acceptable tradeoff for a general-purpose library.
+Eagerly evaluating the rendered struct to work around this breaks LiveView's change tracking (diffing). If this tradeoff is acceptable for your use case, you can opt in with `<.eager_error_boundary>` — see below.
+
+### Opting into render guarding (last resort)
+
+As a **last resort**, you can wrap specific parts of a template in a render error boundary. This should only be used when you cannot fix the underlying component and need a safety net to prevent it from crashing the entire LiveView process:
+
+```elixir
+import LiveRescue.ComponentGuard, only: [eager_error_boundary: 1]
+
+def render(assigns) do
+  ~H"""
+  <.eager_error_boundary>
+    <.some_risky_component />
+  </.eager_error_boundary>
+
+  <.safe_component />  <%!-- This is not guarded --%>
+  """
+end
+```
+
+> **Trade-off:** This completely disables LiveView's change tracking for the guarded content. Every render sends a full update to the client instead of a minimal diff. Prefer fixing the root cause of render errors over using this wrapper.
 
 ## Configuration
 

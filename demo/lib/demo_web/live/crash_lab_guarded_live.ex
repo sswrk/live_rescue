@@ -198,6 +198,32 @@ defmodule DemoWeb.CrashLabGuardedLive do
         </div>
       </div>
 
+      <%!-- Render Guards Section --%>
+      <div class="card bg-base-100 shadow-sm border border-base-200">
+        <div class="card-body">
+          <h2 class="card-title text-lg flex items-center gap-2">
+            <.icon name="hero-shield-exclamation" class="size-5 text-warning" /> Render Guards
+          </h2>
+          <p class="text-sm text-base-content/60 mb-4">
+            Opt-in render error catching via <code>guard_render: true</code> and <code>&lt;.guard&gt;</code>.
+            Catches errors in functional components at the cost of disabling change tracking.
+          </p>
+
+          <div class="card bg-base-200/50 border border-base-300">
+            <div class="card-body p-4">
+              <h3 class="font-semibold">Test Render Guards</h3>
+              <p class="text-sm text-base-content/60">
+                Visit the dedicated render guard test page to see <code>guard_render: true</code>
+                and <code>&lt;.guard&gt;</code> in action.
+              </p>
+              <a href="/guarded/crash/render" class="btn btn-warning btn-sm mt-2">
+                <.icon name="hero-arrow-right" class="size-4" /> Test Render Guards
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <%!-- Nested LiveView Section --%>
       <div class="card bg-base-100 shadow-sm border border-base-200">
         <div class="card-body">

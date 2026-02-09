@@ -1,11 +1,69 @@
 defmodule LiveRescue.ComponentGuard do
   @moduledoc """
-  Provides guarded versions of `Phoenix.Component.live_component/1`.
+  Provides guarded wrappers for components.
+
+  - `live_component_guarded/1` — runtime wrapper for LiveComponents
+  - `eager_error_boundary/1` — functional component wrapper that catches render errors
 
   This module handles runtime creation and caching of wrapper modules that
   delegate LiveComponent callbacks to the original but wrap them with
   LiveRescue's `try/rescue` error handling.
   """
+
+  use Phoenix.Component
+
+  slot :inner_block, required: true
+
+  @doc """
+  Wraps content in a render error boundary. **Use as a last resort.**
+
+  Eagerly evaluates the inner block to catch errors in functional components
+  and other dynamic content. On error, renders a fallback error UI.
+
+  This should only be used when you cannot fix the underlying component and
+  need a safety net to prevent it from crashing the entire LiveView process.
+  Prefer fixing the root cause of render errors over using this wrapper.
+
+  **Trade-off:** This completely disables LiveView's change tracking for the
+  wrapped content, as it forces eager evaluation of all lazy closures. Every
+  render sends a full update to the client instead of a minimal diff.
+
+      <LiveRescue.ComponentGuard.eager_error_boundary>
+        <.some_component />
+      </LiveRescue.ComponentGuard.eager_error_boundary>
+
+  Or import and use with a shorter name:
+
+      import LiveRescue.ComponentGuard, only: [eager_error_boundary: 1]
+
+      <.eager_error_boundary>
+        <.some_component />
+      </.eager_error_boundary>
+  """
+  def eager_error_boundary(assigns) do
+    try do
+      rendered = Phoenix.Component.__render_slot__(nil, assigns.inner_block, nil)
+      force_evaluate(rendered)
+      assigns = assign(assigns, :content, Phoenix.HTML.Safe.to_iodata(rendered) |> Phoenix.HTML.raw())
+
+      ~H"{@content}"
+    rescue
+      e ->
+        LiveRescue.log_error("render (eager_error_boundary)", e, __STACKTRACE__)
+        LiveRescue.render_error(assigns)
+    end
+  end
+
+  defp force_evaluate(%Phoenix.LiveView.Rendered{dynamic: dynamic}) when is_function(dynamic) do
+    dynamic.(false)
+    |> Enum.each(fn
+      %Phoenix.LiveView.Component{} -> :ok
+      %Phoenix.LiveView.Rendered{} = nested -> force_evaluate(nested)
+      _other -> :ok
+    end)
+  end
+
+  defp force_evaluate(_other), do: :ok
 
   @doc """
   A guarded version of `Phoenix.Component.live_component/1`.
