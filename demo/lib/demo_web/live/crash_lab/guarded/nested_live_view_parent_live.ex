@@ -22,8 +22,7 @@ defmodule DemoWeb.CrashLab.Guarded.NestedLiveViewParentLive do
 
   alias DemoWeb.CrashLab.Guarded.Nested.{
     CrashOnMountNestedLive,
-    CrashOnEventNestedLive,
-    CrashOnRenderNestedLive
+    CrashOnEventNestedLive
   }
 
   @impl true
@@ -32,8 +31,7 @@ defmodule DemoWeb.CrashLab.Guarded.NestedLiveViewParentLive do
      socket
      |> assign(:page_title, "Nested LiveView Tests")
      |> assign(:parent_counter, 0)
-     |> assign(:show_mount_crasher, false)
-     |> assign(:show_render_crasher, false)}
+     |> assign(:show_mount_crasher, false)}
   end
 
   @impl true
@@ -47,10 +45,6 @@ defmodule DemoWeb.CrashLab.Guarded.NestedLiveViewParentLive do
 
   def handle_event("toggle_mount_crasher", _params, socket) do
     {:noreply, assign(socket, :show_mount_crasher, !socket.assigns.show_mount_crasher)}
-  end
-
-  def handle_event("toggle_render_crasher", _params, socket) do
-    {:noreply, assign(socket, :show_render_crasher, !socket.assigns.show_render_crasher)}
   end
 
   @impl true
@@ -136,26 +130,6 @@ defmodule DemoWeb.CrashLab.Guarded.NestedLiveViewParentLive do
                 </div>
               <% end %>
             </div>
-
-            <%!-- Crash on Render (toggleable) --%>
-            <div class="space-y-2">
-              <h3 class="font-semibold">Nested: Crash on Render</h3>
-              <p class="text-sm text-base-content/60">
-                Toggle to show a nested LiveView that crashes during render.
-                The error UI should appear inside this container.
-              </p>
-              <div class="flex items-center gap-4">
-                <button phx-click="toggle_render_crasher" class="btn btn-warning btn-sm">
-                  <.icon name="hero-eye" class="size-4" />
-                  {if @show_render_crasher, do: "Hide", else: "Show"} Nested
-                </button>
-              </div>
-              <%= if @show_render_crasher do %>
-                <div class="border border-dashed border-base-300 rounded-lg p-2">
-                  {live_render(@socket, CrashOnRenderNestedLive, id: "nested-render-crash")}
-                </div>
-              <% end %>
-            </div>
           </div>
         </div>
       </div>
@@ -175,7 +149,6 @@ defmodule DemoWeb.CrashLab.Guarded.NestedLiveViewParentLive do
               <strong>Crash on Handle Event:</strong>
               Flash message appears in nested scope, state is preserved
             </li>
-            <li><strong>Crash on Render:</strong> Error UI replaces the nested LiveView content</li>
             <li>
               <strong>Parent Independence:</strong>
               Parent counter and controls work regardless of nested crashes

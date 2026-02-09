@@ -64,21 +64,57 @@ def live_component do
 end
 ```
 
+### Nested LiveComponents
+
+LiveRescue operates at compile time on a per-module basis. Adding `use LiveRescue` to a parent LiveView or LiveComponent does **not** automatically protect child LiveComponents rendered within it. Each component's callbacks are dispatched directly by Phoenix to that component's module — there is no interception point at the parent level.
+
+For example, if `ParentComponent` uses LiveRescue but renders a `ChildComponent` that does not, a crash in `ChildComponent.handle_event/3` will still crash the parent LiveView process.
+
+You have two options to protect child components:
+
+**Option 1: Global setup** — add `use LiveRescue` to your web module's `live_component/0` function (see [Global Setup](#global-setup) above). This protects all components automatically.
+
+**Option 2: Use `live_component_guarded`** — for cases where you can't modify the child component (e.g. third-party libraries), use the guarded wrapper in your HEEx templates:
+
+```elixir
+defmodule MyAppWeb.ParentLive do
+  use MyAppWeb, :live_view
+  use LiveRescue
+
+  import LiveRescue.ComponentGuard, only: [live_component_guarded: 1]
+
+  def render(assigns) do
+    ~H"""
+    <.live_component_guarded module={ThirdPartyComponent} id="tp" />
+    """
+  end
+end
+```
+
+`live_component_guarded/1` is a drop-in replacement for `live_component/1`. At runtime, it checks whether the target module already has LiveRescue. If not, it dynamically creates a wrapper module that delegates all callbacks to the original but wraps them with LiveRescue's `try/rescue` error handling. Wrapper modules are cached in `:persistent_term` and automatically invalidated when the original module is recompiled.
+
+> **Note:** `live_component_guarded` only protects the immediate child. If that child renders its own nested components without LiveRescue, those grandchild components remain unprotected. For full coverage across all nesting levels, use the global setup.
+
 ### Wrapped Callbacks
 
 LiveRescue wraps the following callbacks and handles crashes differently depending on the callback type:
 
 | Callback | Applies to | On crash |
 |----------|------------|----------|
-| `mount/3` | LiveView | Renders error UI instead of the component |
+| `mount/3` | LiveView | Renders error UI instead of the view |
 | `mount/1` | LiveComponent | Renders error UI instead of the component |
 | `update/2` | LiveComponent | Shows flash message, keeps previous state |
-| `render/1` | Both | Renders error UI |
 | `handle_event/3` | Both | Shows flash message |
 | `handle_info/2` | LiveView | Shows flash message |
 | `handle_params/3` | LiveView | Shows flash message |
 
 All crashes are logged with full stacktraces.
+
+### Why `render/1` is not guarded
+
+LiveRescue does **not** wrap the `render` callback with `try/rescue`. Phoenix LiveView's HEEx templates compile to `%Phoenix.LiveView.Rendered{}` structs containing lazy closures for dynamic content. These closures — including calls to functional components — are evaluated during LiveView's diff traversal, **after** the `render` function has already returned. A `try/rescue` around `render` cannot catch errors that occur in these deferred closures.
+
+Eagerly evaluating the rendered struct to work around this would break LiveView's change tracking (diffing), which is not an acceptable tradeoff for a general-purpose library.
 
 ## Configuration
 

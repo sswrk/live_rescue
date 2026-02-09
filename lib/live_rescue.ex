@@ -3,8 +3,23 @@ defmodule LiveRescue do
   LiveRescue protects LiveView and LiveComponent callbacks from crashing the process.
 
   It wraps `mount` (both LiveView and LiveComponent), `handle_event`, `handle_info`,
-  `handle_params`, `update`, and `render` callbacks with try/rescue at compile time
+  `handle_params`, and `update` callbacks with try/rescue at compile time
   using `defoverridable`.
+
+  When a `mount` callback crashes, LiveRescue renders a fallback error component instead
+  of the normal view. For other callback crashes, a flash message is displayed.
+
+  ## Why `render` errors are not caught
+
+  LiveRescue does **not** wrap the `render` callback with try/rescue. Phoenix LiveView's
+  HEEx templates compile to `%Phoenix.LiveView.Rendered{}` structs containing lazy closures
+  for dynamic content. These closures — including calls to functional components — are
+  evaluated during LiveView's diff traversal, **after** the `render` function has already
+  returned. A `try/rescue` around `render` cannot catch errors that occur in these deferred
+  closures.
+
+  Eagerly evaluating the rendered struct to work around this breaks LiveView's change
+  tracking (diffing), which is not an acceptable tradeoff for a general-purpose library.
 
   ## Flash Messages
 
@@ -19,22 +34,20 @@ defmodule LiveRescue do
       def handle_info({LiveRescue, message}, socket) do
         {:noreply, put_flash(socket, :error, message)}
       end
-
-  ## Internal State
-
-  LiveRescue stores its internal state in the `__live_rescue__` assign key. This is
-  a reserved key that should not be modified directly by user code.
   """
 
-  require Logger
-
   import Phoenix.Component, only: [sigil_H: 2]
+
+  require Logger
 
   @private_key :__live_rescue__
 
   defmacro __using__(_opts) do
     quote do
       @before_compile unquote(__MODULE__)
+
+      @doc false
+      def __live_rescue__, do: true
     end
   end
 
@@ -45,8 +58,7 @@ defmodule LiveRescue do
     {:update, 2, :last},
     {:handle_event, 3, :last},
     {:handle_info, 2, :last},
-    {:handle_params, 3, :last},
-    {:render, 1, :first}
+    {:handle_params, 3, :last}
   ]
 
   defmacro __before_compile__(env) do
@@ -60,7 +72,14 @@ defmodule LiveRescue do
         generate_callback_wrapper(name, arity, socket_pos)
       end
 
-    [error_handler | callback_wrappers]
+    render_wrapper =
+      if {:render, 1} in definitions do
+        [generate_render_wrapper()]
+      else
+        []
+      end
+
+    [error_handler | callback_wrappers] ++ render_wrapper
   end
 
   # Always generate a handle_info clause to receive LiveRescue error messages
@@ -74,22 +93,15 @@ defmodule LiveRescue do
     end
   end
 
-  defp generate_callback_wrapper(:render, 1, :first) do
-    assigns_var = Macro.var(:assigns, __MODULE__)
-
+  defp generate_render_wrapper do
     quote do
       defoverridable render: 1
 
-      def render(unquote(assigns_var)) do
-        if unquote(__MODULE__).has_error?(unquote(assigns_var)) do
-          unquote(__MODULE__).render_error(unquote(assigns_var))
+      def render(var!(assigns)) do
+        if unquote(__MODULE__).has_error?(var!(assigns)) do
+          unquote(__MODULE__).render_error(var!(assigns))
         else
-          try do
-            super(unquote(assigns_var))
-          rescue
-            e ->
-              unquote(__MODULE__).handle_crash(:render, e, __STACKTRACE__, unquote(assigns_var))
-          end
+          super(var!(assigns))
         end
       end
     end
@@ -124,18 +136,6 @@ defmodule LiveRescue do
   end
 
   @doc false
-  def has_error?(assigns), do: !!assigns[@private_key][:error]
-
-  @doc false
-  def render_error(assigns) do
-    ~H"""
-    <div style="padding: 1rem; background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 0.5rem; color: #dc2626;">
-      <p style="font-weight: 500; margin: 0;">Unexpected error</p>
-    </div>
-    """
-  end
-
-  @doc false
   def handle_crash(:mount, e, stacktrace, socket) do
     log_error("mount", e, stacktrace)
     {:ok, put_state(socket, %{error: true})}
@@ -147,16 +147,33 @@ defmodule LiveRescue do
     {:ok, socket}
   end
 
-  def handle_crash(:render, e, stacktrace, assigns) do
-    log_error("render", e, stacktrace)
-    render_error(assigns)
-  end
-
   def handle_crash(callback, e, stacktrace, socket)
       when callback in [:handle_event, :handle_info, :handle_params] do
     log_error(Atom.to_string(callback), e, stacktrace)
     notify_error()
     {:noreply, socket}
+  end
+
+  @doc false
+  def has_error?(assigns) do
+    case assigns[:socket] do
+      %{private: %{@private_key => %{error: true}}} -> true
+      _ -> false
+    end
+  end
+
+  @doc false
+  def render_error(assigns) do
+    ~H"""
+    <div role="alert" style="padding:1rem;border:1px solid #e53e3e;border-radius:0.5rem;background:#fff5f5;color:#c53030;">
+      <strong>Something went wrong.</strong>
+      <p style="margin-top:0.5rem;font-size:0.875rem;">This component failed to load. Please try refreshing the page.</p>
+    </div>
+    """
+  end
+
+  defp put_state(socket, state) do
+    Phoenix.LiveView.put_private(socket, @private_key, state)
   end
 
   # Sends an error message to the current process to display a flash.
@@ -179,10 +196,5 @@ defmodule LiveRescue do
     """)
   end
 
-  # Private helpers for managing LiveRescue's internal state
-
-  defp put_state(socket, state) when is_map(state) do
-    current = Map.get(socket.assigns, @private_key, %{})
-    Phoenix.Component.assign(socket, @private_key, Map.merge(current, state))
-  end
+  defdelegate live_component_guarded(assigns), to: LiveRescue.ComponentGuard
 end

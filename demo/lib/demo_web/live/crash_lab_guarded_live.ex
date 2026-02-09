@@ -10,8 +10,10 @@ defmodule DemoWeb.CrashLabGuardedLive do
     CrashOnClickComponent,
     CrashOnUpdateComponent,
     CrashOnMountComponent,
-    CrashOnRenderComponent
+    CrashExternalComponent
   }
+
+  import LiveRescue.ComponentGuard, only: [live_component_guarded: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -20,7 +22,6 @@ defmodule DemoWeb.CrashLabGuardedLive do
      socket
      |> assign(:page_title, "Crash Lab - LiveRescue")
      |> assign(:show_mount_crasher, false)
-     |> assign(:show_render_crasher, false)
      |> assign(:update_trigger, 0)}
   end
 
@@ -31,10 +32,6 @@ defmodule DemoWeb.CrashLabGuardedLive do
 
   def handle_event("toggle_mount_crasher", _params, socket) do
     {:noreply, assign(socket, :show_mount_crasher, !socket.assigns.show_mount_crasher)}
-  end
-
-  def handle_event("toggle_render_crasher", _params, socket) do
-    {:noreply, assign(socket, :show_render_crasher, !socket.assigns.show_render_crasher)}
   end
 
   def handle_event("trigger_update_crash", _params, socket) do
@@ -121,18 +118,6 @@ defmodule DemoWeb.CrashLabGuardedLive do
                 </a>
               </div>
             </div>
-
-            <div class="card bg-base-200/50 border border-base-300">
-              <div class="card-body p-4">
-                <h3 class="font-semibold">Crash on Render</h3>
-                <p class="text-sm text-base-content/60">
-                  Navigate to a page that crashes during render
-                </p>
-                <a href={"#{@base_path}/crash/render"} class="btn btn-error btn-sm mt-2">
-                  <.icon name="hero-eye" class="size-4" /> Visit Render Crash
-                </a>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -189,22 +174,25 @@ defmodule DemoWeb.CrashLabGuardedLive do
                 <% end %>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            <%!-- Crash on Render --%>
+      <%!-- Guarded External Component Section --%>
+      <div class="card bg-base-100 shadow-sm border border-base-200">
+        <div class="card-body">
+          <h2 class="card-title text-lg flex items-center gap-2">
+            <.icon name="hero-shield-check" class="size-5 text-success" /> Guarded External Component
+          </h2>
+          <p class="text-sm text-base-content/60 mb-4">
+            This component does <strong>not</strong> use LiveRescue internally.
+            It is protected by <code>live_component_guarded/1</code> which wraps it dynamically.
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-2">
-              <h3 class="font-semibold">Component: Crash on Render</h3>
-              <p class="text-sm text-base-content/60">
-                Toggle to show a component that crashes during render
-              </p>
-              <div class="flex items-center gap-4">
-                <button phx-click="toggle_render_crasher" class="btn btn-warning btn-sm">
-                  <.icon name="hero-eye" class="size-4" />
-                  {if @show_render_crasher, do: "Hide", else: "Show"} Component
-                </button>
-                <%= if @show_render_crasher do %>
-                  <.live_component module={CrashOnRenderComponent} id="crash-on-render" />
-                <% end %>
-              </div>
+              <h3 class="font-semibold">Dynamically Guarded Component</h3>
+              <.live_component_guarded module={CrashExternalComponent} id="external-crash" />
             </div>
           </div>
         </div>
