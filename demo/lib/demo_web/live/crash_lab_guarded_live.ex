@@ -205,7 +205,8 @@ defmodule DemoWeb.CrashLabGuardedLive do
             <.icon name="hero-shield-exclamation" class="size-5 text-warning" /> Render Guards
           </h2>
           <p class="text-sm text-base-content/60 mb-4">
-            Opt-in render error catching via <code>guard_render: true</code> and <code>&lt;.guard&gt;</code>.
+            Opt-in render error catching via <code>guard_render: true</code>
+            and <code>&lt;.guard&gt;</code>.
             Catches errors in functional components at the cost of disabling change tracking.
           </p>
 
@@ -214,7 +215,8 @@ defmodule DemoWeb.CrashLabGuardedLive do
               <h3 class="font-semibold">Test Render Guards</h3>
               <p class="text-sm text-base-content/60">
                 Visit the dedicated render guard test page to see <code>guard_render: true</code>
-                and <code>&lt;.guard&gt;</code> in action.
+                and <code>&lt;.guard&gt;</code>
+                in action.
               </p>
               <a href="/guarded/crash/render" class="btn btn-warning btn-sm mt-2">
                 <.icon name="hero-arrow-right" class="size-4" /> Test Render Guards

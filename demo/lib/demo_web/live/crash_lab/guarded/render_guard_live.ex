@@ -49,7 +49,8 @@ defmodule DemoWeb.CrashLab.Guarded.RenderGuardLive do
             <code>&lt;.eager_error_boundary&gt;</code> Component Wrapper
           </h2>
           <p class="text-sm text-base-content/60 mb-4">
-            The <code>&lt;.eager_error_boundary&gt;</code> component wraps specific parts of a template.
+            The <code>&lt;.eager_error_boundary&gt;</code>
+            component wraps specific parts of a template.
             Only the wrapped content shows error UI — the rest of the view continues to work.
           </p>
 
@@ -106,8 +107,7 @@ defmodule DemoWeb.CrashLab.Guarded.RenderGuardLive do
               Only the wrapped content shows error UI; rest of the view is unaffected
             </li>
             <li>
-              <strong>Trade-off:</strong>
-              Disables LiveView change tracking for guarded content
+              <strong>Trade-off:</strong> Disables LiveView change tracking for guarded content
             </li>
           </ul>
         </div>
