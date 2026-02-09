@@ -35,6 +35,9 @@ defmodule LiveRescue do
   defmacro __using__(_opts) do
     quote do
       @before_compile unquote(__MODULE__)
+
+      @doc false
+      def __live_rescue__, do: true
     end
   end
 
@@ -185,4 +188,6 @@ defmodule LiveRescue do
     current = Map.get(socket.assigns, @private_key, %{})
     Phoenix.Component.assign(socket, @private_key, Map.merge(current, state))
   end
+
+  defdelegate live_component_guarded(assigns), to: LiveRescue.ComponentGuard
 end

@@ -10,8 +10,11 @@ defmodule DemoWeb.CrashLabGuardedLive do
     CrashOnClickComponent,
     CrashOnUpdateComponent,
     CrashOnMountComponent,
-    CrashOnRenderComponent
+    CrashOnRenderComponent,
+    CrashExternalComponent
   }
+
+  import LiveRescue.ComponentGuard, only: [live_component_guarded: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -205,6 +208,26 @@ defmodule DemoWeb.CrashLabGuardedLive do
                   <.live_component module={CrashOnRenderComponent} id="crash-on-render" />
                 <% end %>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <%!-- Guarded External Component Section --%>
+      <div class="card bg-base-100 shadow-sm border border-base-200">
+        <div class="card-body">
+          <h2 class="card-title text-lg flex items-center gap-2">
+            <.icon name="hero-shield-check" class="size-5 text-success" /> Guarded External Component
+          </h2>
+          <p class="text-sm text-base-content/60 mb-4">
+            This component does <strong>not</strong> use LiveRescue internally.
+            It is protected by <code>live_component_guarded/1</code> which wraps it dynamically.
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+              <h3 class="font-semibold">Dynamically Guarded Component</h3>
+              <.live_component_guarded module={CrashExternalComponent} id="external-crash" />
             </div>
           </div>
         </div>

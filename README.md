@@ -64,6 +64,37 @@ def live_component do
 end
 ```
 
+### Nested LiveComponents
+
+LiveRescue operates at compile time on a per-module basis. Adding `use LiveRescue` to a parent LiveView or LiveComponent does **not** automatically protect child LiveComponents rendered within it. Each component's callbacks are dispatched directly by Phoenix to that component's module — there is no interception point at the parent level.
+
+For example, if `ParentComponent` uses LiveRescue but renders a `ChildComponent` that does not, a crash in `ChildComponent.handle_event/3` will still crash the parent LiveView process.
+
+You have two options to protect child components:
+
+**Option 1: Global setup** — add `use LiveRescue` to your web module's `live_component/0` function (see [Global Setup](#global-setup) above). This protects all components automatically.
+
+**Option 2: Use `live_component_guarded`** — for cases where you can't modify the child component (e.g. third-party libraries), use the guarded wrapper in your HEEx templates:
+
+```elixir
+defmodule MyAppWeb.ParentLive do
+  use MyAppWeb, :live_view
+  use LiveRescue
+
+  import LiveRescue.ComponentGuard, only: [live_component_guarded: 1]
+
+  def render(assigns) do
+    ~H"""
+    <.live_component_guarded module={ThirdPartyComponent} id="tp" />
+    """
+  end
+end
+```
+
+`live_component_guarded/1` is a drop-in replacement for `live_component/1`. At runtime, it checks whether the target module already has LiveRescue. If not, it dynamically creates a wrapper module that delegates all callbacks to the original but wraps them with LiveRescue's `try/rescue` error handling. Wrapper modules are cached in `:persistent_term` and automatically invalidated when the original module is recompiled.
+
+> **Note:** `live_component_guarded` only protects the immediate child. If that child renders its own nested components without LiveRescue, those grandchild components remain unprotected. For full coverage across all nesting levels, use the global setup.
+
 ### Wrapped Callbacks
 
 LiveRescue wraps the following callbacks and handles crashes differently depending on the callback type:
